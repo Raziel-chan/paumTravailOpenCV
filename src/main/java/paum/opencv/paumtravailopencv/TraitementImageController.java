@@ -1,17 +1,24 @@
 package paum.opencv.paumtravailopencv;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 public class TraitementImageController {
 
@@ -42,7 +49,8 @@ public class TraitementImageController {
             else{
                 toggleButtonCouleur.setStyle("-fx-background-color:red");
             }
-            operationAEffectuer();
+            timeline.stop();
+            timeline.play();
         }
     }
 
@@ -61,6 +69,15 @@ public class TraitementImageController {
             //https://stackoverflow.com/questions/25643098/how-to-set-fileimage-on-imageview
             imageOriginale.setImage(new Image(cheminImage));
             matriceImageEnCouleur = Imgcodecs.imread(cheminImage);
+
+            if (toggleButtonCouleur.isSelected()){
+                toggleButtonCouleur.setSelected(false);
+                toggleButtonCouleur.setStyle("-fx-background-color:red");
+            }
+
+            forceMatriceTransformation.setValue(0);
+            accordionParametreOperation.getPanes().forEach(pane -> pane.setExpanded(false));
+
         }
     }
 
@@ -83,7 +100,8 @@ public class TraitementImageController {
             Size size = new Size(2 * kernelSize + 1, 2 * kernelSize + 1);
             matriceDeTransformation =  Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, size,new Point(kernelSize, kernelSize));
             matriceDestination = new Mat();
-            operationAEffectuer();
+            timeline.stop();
+            timeline.play();
         }
         else {
             typeOperation.getSelectionModel().clearSelection();
@@ -106,13 +124,29 @@ public class TraitementImageController {
 
     @FXML protected void faireOperationUneFoisSliderArreter(){
         labelForceMatrice.setText(String.valueOf((int)Math.round(forceMatriceTransformation.getValue())));
-        int kernelSize = (int)Math.round(forceMatriceTransformation.getValue());
-        Size size = new Size(2 * kernelSize + 1, 2 * kernelSize + 1);
-        matriceDeTransformation =  Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, size,new Point(kernelSize, kernelSize));
-        matriceDestination = new Mat();
-
-        operationAEffectuer();
+        timeline.stop();
+        timeline.play();
     }
+
+    private final Timeline timeline = new Timeline(new KeyFrame(Duration.millis(100), event -> {
+        // Perform the erode operation on a background thread
+        CompletableFuture.supplyAsync(() -> {
+            int kernelSize = (int)Math.round(forceMatriceTransformation.getValue());
+            Size size = new Size(2 * kernelSize + 1, 2 * kernelSize + 1);
+            matriceDeTransformation =  Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, size,new Point(kernelSize, kernelSize));
+            matriceDestination = new Mat();
+
+            operationAEffectuer();
+
+            return mat2Image(matriceDestination);
+        }).thenAccept(image -> {
+            // Update the UI with the result of the erode operation
+            Platform.runLater(() -> {
+                imageOriginale.setImage(image);
+            });
+        });
+    }));
+
 
     private void operationAEffectuer() {
         if ( typeOperation.getSelectionModel().getSelectedItem() != null){
@@ -123,22 +157,23 @@ public class TraitementImageController {
         }
 
         switch (choixOperation) {
-            case "aucune":
-                accordionParametreOperation.setVisible(false);
-                imageOriginale.setImage(mat2Image(matriceImageEnCouleur));
-                break;
             case "convolution":
             case "érosion":
                 if (toggleButtonCouleur.isSelected()){
                     Imgproc.erode(matriceImageEnGris, matriceDestination, matriceDeTransformation);
-                    imageOriginale.setImage(mat2Image(matriceDestination));
                 }
                 else {
                     Imgproc.erode(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
-                    imageOriginale.setImage(mat2Image(matriceDestination));
                 }
                 break;
             case "dilatation":
+                if (toggleButtonCouleur.isSelected()){
+                    Imgproc.dilate(matriceImageEnGris, matriceDestination, matriceDeTransformation);
+                }
+                else {
+                    Imgproc.dilate(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
+                }
+                break;
             case "ouverture":
             case "fermeture":
             case "filtre de canny":

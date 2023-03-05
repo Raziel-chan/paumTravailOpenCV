@@ -30,24 +30,14 @@
          <ComboBox fx:id="typeOperation" layoutX="79.0" layoutY="2.0" onHiding="#choixTypeOperation" onShowing="#initialisationChoix" prefHeight="25.0" prefWidth="177.0" promptText="Effectuer une opération" />
          <Accordion fx:id="accordionParametreOperation" layoutX="424.0" layoutY="2.0" visible="false">
            <panes>
-             <TitledPane animated="false" text="untitled 1">
-               <content>
-                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
-               </content>
-             </TitledPane>
              <TitledPane animated="false" text="Paramètres ">
                <content>
                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="207.0">
                         <children>
-                           <Slider fx:id="forceMatriceTransformation" layoutY="40.0" max="20.0" onMouseDragged="#sliderABouger" onMouseReleased="#faireOperationUneFoisSliderArreter" />
+                           <Slider fx:id="forceMatriceTransformation" layoutY="40.0" max="20.0" onMouseClicked="#faireOperationUneFoisSliderArreter" onMouseDragged="#faireOperationUneFoisSliderArreter" />
                            <Label layoutY="14.0" text="Force de la matrice de transformation" />
                            <Label fx:id="labelForceMatrice" layoutX="62.0" layoutY="54.0" prefHeight="17.0" prefWidth="31.0" />
                         </children></AnchorPane>
-               </content>
-             </TitledPane>
-             <TitledPane animated="false" text="untitled 3">
-               <content>
-                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
                </content>
              </TitledPane>
            </panes>
