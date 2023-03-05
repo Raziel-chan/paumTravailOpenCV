@@ -3,12 +3,12 @@ package paum.opencv.paumtravailopencv;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.concurrent.Service;
-import javafx.concurrent.Task;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -28,7 +28,7 @@ public class TraitementImageController {
     @FXML public ComboBox typeOperation;
 
     @FXML public ToggleButton toggleButtonCouleur;
-    @FXML public Mat matriceImageEnCouleur = null;
+    @FXML public Mat matriceImageEnCouleur = new Mat();
 
     @FXML public String cheminImage;
     @FXML public Mat matriceImageEnGris = new Mat();
@@ -118,11 +118,7 @@ public class TraitementImageController {
 
     @FXML private Mat matriceDestination;
 
-    @FXML protected void sliderABouger(){
-        labelForceMatrice.setText(String.valueOf((int)Math.round(forceMatriceTransformation.getValue())));
-    }
-
-    @FXML protected void faireOperationUneFoisSliderArreter(){
+    @FXML protected void sliderEstEntrainDeBouger(){
         labelForceMatrice.setText(String.valueOf((int)Math.round(forceMatriceTransformation.getValue())));
         timeline.stop();
         timeline.play();
@@ -156,36 +152,113 @@ public class TraitementImageController {
             choixOperation = "";
         }
 
+        boolean initialisation = false;
+        final TitledPane titledPaneFilter = new TitledPane();
+
         switch (choixOperation) {
             case "convolution":
-            case "érosion":
-                if (toggleButtonCouleur.isSelected()){
-                    Imgproc.erode(matriceImageEnGris, matriceDestination, matriceDeTransformation);
+                if (!initialisation) {
+                    // Create a new titled pane
+                    titledPaneFilter.setText("Filters");
+
+                    // Create an anchor pane to hold the radio buttons
+                    AnchorPane anchorPane = new AnchorPane();
+                    anchorPane.setPrefSize(300, 100);
+
+                    // Create the radio buttons
+                    RadioButton blurRadioButton = new RadioButton("Blur");
+                    RadioButton gaussianBlurRadioButton = new RadioButton("Gaussian Blur");
+                    RadioButton medianFilterRadioButton = new RadioButton("Median Filter");
+                    RadioButton bilateralFilterRadioButton = new RadioButton("Bilateral Filter");
+
+                    // Add the radio buttons to a toggle group
+                    ToggleGroup toggleGroup = new ToggleGroup();
+                    blurRadioButton.setToggleGroup(toggleGroup);
+                    gaussianBlurRadioButton.setToggleGroup(toggleGroup);
+                    medianFilterRadioButton.setToggleGroup(toggleGroup);
+                    bilateralFilterRadioButton.setToggleGroup(toggleGroup);
+
+                    // Add the radio buttons to the anchor pane
+                    anchorPane.getChildren().addAll(blurRadioButton, gaussianBlurRadioButton, medianFilterRadioButton, bilateralFilterRadioButton);
+
+                    // Set the anchor pane as the content of the titled pane
+                    titledPaneFilter.setContent(anchorPane);
+                    // Add the titled pane to the accordion
+                    Platform.runLater(() -> {
+                        accordionParametreOperation.getPanes().add(titledPaneFilter);
+                    });
+
+                } else {
+                    Platform.runLater(() -> {
+                        accordionParametreOperation.getPanes().add(titledPaneFilter);
+                    });
                 }
-                else {
+                break;
+            case "érosion":
+                Platform.runLater(() -> {
+                    ObservableList<TitledPane> panes = accordionParametreOperation.getPanes();
+                    for (int i = 0; i < panes.size(); i++) {
+                        TitledPane pane = panes.get(i);
+                        if (pane.getText().equals("Filters")) {
+                            accordionParametreOperation.getPanes().remove(i);
+                            break;
+                        }
+                    }
+                });
+                if (toggleButtonCouleur.isSelected()) {
+                    Imgproc.erode(matriceImageEnGris, matriceDestination, matriceDeTransformation);
+                } else {
                     Imgproc.erode(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
                 }
                 break;
             case "dilatation":
-                if (toggleButtonCouleur.isSelected()){
+                accordionParametreOperation.getPanes().remove(titledPaneFilter);
+                if (toggleButtonCouleur.isSelected()) {
                     Imgproc.dilate(matriceImageEnGris, matriceDestination, matriceDeTransformation);
-                }
-                else {
+                } else {
                     Imgproc.dilate(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
                 }
                 break;
             case "ouverture":
-            case "fermeture":
-            case "filtre de canny":
-            case "détection de contours":
-            case "détection de coins":
-            case "détection d'objets":
-            default:
-                accordionParametreOperation.setVisible(false);
-                if (toggleButtonCouleur.isSelected()){
-                    imageOriginale.setImage(mat2Image(matriceImageEnGris));
+                accordionParametreOperation.getPanes().remove(titledPaneFilter);
+                if (toggleButtonCouleur.isSelected()) {
+                    Imgproc.erode(matriceImageEnGris, matriceDestination, matriceDeTransformation);
+                    Imgproc.dilate(matriceDestination, matriceDestination, matriceDeTransformation);
+                } else {
+                    Imgproc.erode(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
+                    Imgproc.dilate(matriceDestination, matriceDestination, matriceDeTransformation);
                 }
-                else{
+                break;
+            case "fermeture":
+                accordionParametreOperation.getPanes().remove(titledPaneFilter);
+                if (toggleButtonCouleur.isSelected()) {
+                    Imgproc.dilate(matriceImageEnGris, matriceDestination, matriceDeTransformation);
+                    Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
+                } else {
+                    Imgproc.dilate(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
+                    Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
+                }
+                break;
+            case "filtre de canny":
+                accordionParametreOperation.getPanes().remove(titledPaneFilter);
+                break;
+            case "détection de contours":
+                accordionParametreOperation.getPanes().remove(titledPaneFilter);
+                break;
+            case "détection de coins":
+                accordionParametreOperation.getPanes().remove(titledPaneFilter);
+                break;
+            case "détection d'objets":
+                accordionParametreOperation.getPanes().remove(titledPaneFilter);
+                break;
+            default:
+                if (accordionParametreOperation.isVisible()){
+                    accordionParametreOperation.setVisible(false);
+                }
+
+                if (toggleButtonCouleur.isSelected()) {
+                    imageOriginale.setImage(mat2Image(matriceImageEnGris));
+                } else {
                     imageOriginale.setImage(mat2Image(matriceImageEnCouleur));
                 }
                 break;

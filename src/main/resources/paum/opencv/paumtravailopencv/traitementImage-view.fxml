@@ -34,7 +34,7 @@
                <content>
                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="207.0">
                         <children>
-                           <Slider fx:id="forceMatriceTransformation" layoutY="40.0" max="20.0" onMouseClicked="#faireOperationUneFoisSliderArreter" onMouseDragged="#faireOperationUneFoisSliderArreter" />
+                           <Slider fx:id="forceMatriceTransformation" layoutY="40.0" max="20.0" onMouseClicked="#sliderEstEntrainDeBouger" onMouseDragged="#sliderEstEntrainDeBouger" />
                            <Label layoutY="14.0" text="Force de la matrice de transformation" />
                            <Label fx:id="labelForceMatrice" layoutX="62.0" layoutY="54.0" prefHeight="17.0" prefWidth="31.0" />
                         </children></AnchorPane>

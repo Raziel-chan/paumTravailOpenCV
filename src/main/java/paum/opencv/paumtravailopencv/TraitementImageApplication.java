@@ -15,7 +15,7 @@ public class TraitementImageApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(TraitementImageApplication.class.getResource("traitementImage-view.fxml"));
-        scene = new Scene(fxmlLoader.load(), 1920, 1080);
+        scene = new Scene(fxmlLoader.load(), 1500, 700);
         stage.setTitle("Paum traitement image");
         stage.setScene(scene);
         stage.show();
