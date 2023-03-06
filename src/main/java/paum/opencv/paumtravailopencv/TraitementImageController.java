@@ -53,6 +53,10 @@ public class TraitementImageController {
         }
     }
 
+    @FXML protected void foldArccodion(){
+        accordionParametreOperation.getPanes().forEach(pane -> pane.setExpanded(false));
+    }
+
 
     @FXML
     protected void menuItemOuvertureFichier() {
@@ -75,8 +79,10 @@ public class TraitementImageController {
             }
 
             forceMatriceTransformation.setValue(0);
+            labelForceMatrice.setText(String.valueOf((int)forceMatriceTransformation.getValue()));
             accordionParametreOperation.getPanes().forEach(pane -> pane.setExpanded(false));
-
+            accordionParametreOperation.setVisible(false);
+            typeOperation.setValue(null);
         }
     }
 
@@ -101,6 +107,20 @@ public class TraitementImageController {
             matriceDestination = new Mat();
             initialisationMenuConvolution();
             metAccordionAvecValeurParDefaut();
+            if(typeOperation.getSelectionModel().getSelectedItem() != null){
+                if(typeOperation.getSelectionModel().getSelectedItem().toString().equalsIgnoreCase("convolution")){
+                    forceMatriceTransformation.minProperty().setValue(1);
+                    forceMatriceTransformation.setValue(1);
+                    labelForceMatrice.setText(String.valueOf((int)forceMatriceTransformation.getValue()));
+                    taille = Integer.parseInt(labelForceMatrice.getText());
+                }
+                else {
+                    forceMatriceTransformation.minProperty().setValue(0);
+                    forceMatriceTransformation.setValue(0);
+                    labelForceMatrice.setText(String.valueOf((int)forceMatriceTransformation.getValue()));
+                    taille = Integer.parseInt(labelForceMatrice.getText());
+                }
+            }
             timeline.stop();
             timeline.play();
         }
@@ -162,9 +182,11 @@ public class TraitementImageController {
     @FXML private Mat matriceDeTransformation;
 
     @FXML private Mat matriceDestination;
+    int taille;
 
     @FXML protected void sliderEstEntrainDeBouger(){
         labelForceMatrice.setText(String.valueOf((int)Math.round(forceMatriceTransformation.getValue())));
+        taille = Integer.parseInt(labelForceMatrice.getText());
         timeline.stop();
         timeline.play();
     }
@@ -187,7 +209,6 @@ public class TraitementImageController {
             });
         });
     }));
-
     private void metAccordionAvecValeurParDefaut(){
         toggleGroup.selectToggle(null);
         accordionParametreOperation.getPanes().get(0).setExpanded(false);
@@ -201,6 +222,12 @@ public class TraitementImageController {
     private boolean initialisationMenuConvolution = false;
     private ToggleGroup toggleGroup = new ToggleGroup();
 
+    private void nombreOddAEven(){
+        if (taille % 2 == 0) {
+            taille++; // make the kernel size odd
+        }
+    }
+
     private void operationAEffectuer() {
         if ( typeOperation.getSelectionModel().getSelectedItem() != null){
             choixOperation = typeOperation.getSelectionModel().getSelectedItem().toString().toLowerCase();
@@ -210,16 +237,67 @@ public class TraitementImageController {
         }
         switch (choixOperation) {
             case "convolution":
+                    blurRadioButton.setOnAction(e -> {
+                        timeline.stop();
+                        timeline.play();
+                    });
+
+                    gaussianBlurRadioButton.setOnAction(e -> {
+                        timeline.stop();
+                        timeline.play();
+                    });
+
+                    medianFilterRadioButton.setOnAction(e -> {
+                        timeline.stop();
+                        timeline.play();
+                    });
+
+                    bilateralFilterRadioButton.setOnAction(e -> {
+                        timeline.stop();
+                        timeline.play();
+                    });
+
                     accordionParametreOperation.getPanes().get(1).setVisible(true);
                     if (blurRadioButton.isSelected())
                     {
-                        
-                    } else if (medianFilterRadioButton.isSelected()) {
-                        
-                    } else if (bilateralFilterRadioButton.isSelected()) {
-                        
-                    } else if (gaussianBlurRadioButton.isSelected()) {
-                        
+                        if (toggleButtonCouleur.isSelected()) {
+                            Imgproc.blur(matriceImageEnGris, matriceDestination, new Size(taille, taille), new Point(-1, -1));
+                        } else {
+                            Imgproc.blur(matriceImageEnCouleur, matriceDestination, new Size(taille, taille), new Point(-1, -1));
+                        }
+                    }
+                    else if (medianFilterRadioButton.isSelected())
+                    {
+                        nombreOddAEven();
+                        if (toggleButtonCouleur.isSelected()) {
+                            Imgproc.medianBlur(matriceImageEnGris, matriceDestination, taille);
+                        } else {
+                            Imgproc.medianBlur(matriceImageEnCouleur, matriceDestination, taille);
+                        }
+                    }
+                    else if (bilateralFilterRadioButton.isSelected())
+                    {
+                        if (toggleButtonCouleur.isSelected()) {
+                            Imgproc.bilateralFilter(matriceImageEnGris, matriceDestination, taille, taille * 2, (double)taille / 2);
+                        } else {
+                            Imgproc.bilateralFilter(matriceImageEnCouleur, matriceDestination, taille, taille * 2, (double)taille / 2);
+                        }
+                    }
+                    else if (gaussianBlurRadioButton.isSelected())
+                    {
+                        nombreOddAEven();
+                        if (toggleButtonCouleur.isSelected()) {
+                            Imgproc.GaussianBlur(matriceImageEnGris, matriceDestination, new Size(taille, taille), 0, 0);
+                        } else {
+                            Imgproc.GaussianBlur(matriceImageEnCouleur, matriceDestination, new Size(taille, taille), 0, 0);
+                        }
+                    }
+                    else {
+                        if (toggleButtonCouleur.isSelected()) {
+                            matriceDestination = matriceImageEnGris;
+                        } else {
+                            matriceDestination = matriceImageEnCouleur;
+                        }
                     }
                 break;
             case "érosion":
