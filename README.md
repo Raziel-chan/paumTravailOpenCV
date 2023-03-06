@@ -1,5 +1,6 @@
 # paumTravailOpenCV
 Projet pour travail OpenCV
+
 C'est un travail demandé par un proffeseur pour un cours au Cégep de sept-îles pour apprendre le traitement d'image.
 
 Le travail consiste à mettre l'image en gris et faire les différents traitement.
