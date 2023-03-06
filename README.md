@@ -7,4 +7,4 @@ Le travail consiste à mettre l'image en gris et faire les différents traitemen
 
 Cela consiste à faire la convolutions, l'érosion, la dilatation, ouverture, fermeture, filtre de canny, détections de contours, détections de coins et la détections d'objet.
 
-À l'aide de boutons et de menu pour pouvoir changer les images et/ou paramètres.
+Grâce à l'aide de boutons et de menu nous pouvons changer l'image et/ou paramètres des différents opération.
