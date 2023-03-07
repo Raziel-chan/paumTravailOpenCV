@@ -119,6 +119,7 @@ public class TraitementImageController {
                     forceMatriceTransformation.setValue(0);
                     labelForceMatrice.setText(String.valueOf((int)forceMatriceTransformation.getValue()));
                     taille = Integer.parseInt(labelForceMatrice.getText());
+                    toggleButtonCouleur.setVisible(true);
                 }
             }
             timeline.stop();
@@ -349,6 +350,12 @@ public class TraitementImageController {
                 }
                 break;
             case "filtre de canny":
+                toggleButtonCouleur.setVisible(false);
+                final int RATIO = 3;
+                final int KERNEL_SIZE = 3;
+                Imgproc.blur(matriceImageEnGris, matriceDestination, new Size(taille, taille), new Point(-1, -1));
+                Imgproc.Canny(matriceDestination, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
+
                 Platform.runLater(() -> {
                     accordionParametreOperation.getPanes().get(1).setVisible(false);
                 });
