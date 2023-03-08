@@ -8,3 +8,7 @@ Le travail consiste à mettre l'image en gris et faire les différents traitemen
 Cela consiste à faire la convolutions, l'érosion, la dilatation, ouverture, fermeture, filtre de canny, détections de contours, détections de coins et la détections d'objet.
 
 Grâce à l'aide de boutons et de menu nous pouvons changer l'image et/ou paramètres des différentes opération.
+
+*Pour ouvrir l'application, il faut avoir le java runtime version 19.
+
+https://www.oracle.com/ca-en/java/technologies/downloads/#jdk19-windows
