@@ -11,7 +11,11 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import org.opencv.core.*;
+import org.jetbrains.annotations.NotNull;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.core.Point;
+import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
@@ -19,29 +23,32 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
-import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class TraitementImageController {
-
     //https://stackoverflow.com/questions/39463461/javafx-draw-image-inside-in-pane
     @FXML private ImageView imageOriginale = null;
-
     @FXML public ComboBox typeOperation;
-
     @FXML public ToggleButton toggleButtonCouleur;
-    @FXML public Mat matriceImageEnCouleur = new Mat();
+    @FXML Accordion accordionParametreOperation;
+    @FXML private Slider forceMatriceTransformation;
+    @FXML private Label labelForceMatrice;
+    public Mat matriceImageEnCouleur = new Mat();
+    public String cheminImage;
+    public Mat matriceImageEnGris = new Mat();
+    private Mat matriceDeTransformation;
+    private Mat matriceDestination;
+    String choixOperation = null;
+    private boolean imageEstEnGris = false;
+    int taille;
+    private boolean initialisationMenuConvolution = false;
+    private final ToggleGroup toggleGroup = new ToggleGroup();
+    private final RadioButton blurRadioButton = new RadioButton("Blur");
+    private final RadioButton gaussianBlurRadioButton = new RadioButton("Gaussian Blur");
+    private final RadioButton medianFilterRadioButton = new RadioButton("Median Filter");
+    private final RadioButton bilateralFilterRadioButton = new RadioButton("Bilateral Filter");
+    private final TitledPane titledPaneFilter = new TitledPane();
 
-    @FXML public String cheminImage;
-    @FXML public Mat matriceImageEnGris = new Mat();
-
-    //https://stackoverflow.com/questions/34771380/how-to-convert-a-javafx-image-to-a-opencv-matrix
-    private static Image mat2Image(Mat frame) {
-        MatOfByte buffer = new MatOfByte();
-        Imgcodecs.imencode(".png", frame, buffer);
-        //https://jenkov.com/tutorials/java-io/bytearrayinputstream.html
-        return new Image(new ByteArrayInputStream(buffer.toArray()));
-    }
     @FXML protected void metImageEnGrisOuCouleur(){
         if (cheminImage != null){
             if (toggleButtonCouleur.isSelected()){
@@ -57,12 +64,6 @@ public class TraitementImageController {
             timeline.play();
         }
     }
-
-    @FXML protected void foldArccodion(){
-        accordionParametreOperation.getPanes().forEach(pane -> pane.setExpanded(false));
-    }
-
-
     @FXML
     protected void menuItemOuvertureFichier() {
         File imageChoisis;
@@ -90,18 +91,12 @@ public class TraitementImageController {
             typeOperation.setValue(null);
         }
     }
-
     @FXML
     protected void initialisationChoix() {
         if (typeOperation.getItems().size() == 0) {
             typeOperation.getItems().addAll("Aucune","Convolution","Érosion","Dilatation","Ouverture","Fermeture","Filtre de Canny","Détection de contours","Détection de coins","Détection d'objets");
         }
     }
-
-    String choixOperation = null;
-
-    @FXML Accordion accordionParametreOperation;
-
     @FXML
     protected void choixTypeOperation(){
         if (imageOriginale.getImage() != null){
@@ -110,7 +105,6 @@ public class TraitementImageController {
             Size size = new Size(2 * kernelSize + 1, 2 * kernelSize + 1);
             matriceDeTransformation =  Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, size,new Point(kernelSize, kernelSize));
             matriceDestination = new Mat();
-            initialisationMenuConvolution();
             metAccordionAvecValeurParDefaut();
             if(typeOperation.getSelectionModel().getSelectedItem() != null){
                 if(typeOperation.getSelectionModel().getSelectedItem().toString().equalsIgnoreCase("convolution")){
@@ -134,14 +128,24 @@ public class TraitementImageController {
             typeOperation.getSelectionModel().clearSelection();
             typeOperation.setPromptText("Effectuer une opération");
         }
-
     }
-   private final RadioButton blurRadioButton = new RadioButton("Blur");
-    private final RadioButton gaussianBlurRadioButton = new RadioButton("Gaussian Blur");
-    private final RadioButton medianFilterRadioButton = new RadioButton("Median Filter");
-    private final RadioButton bilateralFilterRadioButton = new RadioButton("Bilateral Filter");
-    private final TitledPane titledPaneFilter = new TitledPane();
-
+    @FXML
+    protected void sliderEstEntrainDeBouger(){
+        labelForceMatrice.setText(String.valueOf((int)Math.round(forceMatriceTransformation.getValue())));
+        taille = Integer.parseInt(labelForceMatrice.getText());
+        timeline.stop();
+        timeline.play();
+    }
+    //https://stackoverflow.com/questions/34771380/how-to-convert-a-javafx-image-to-a-opencv-matrix
+    private static @NotNull Image mat2Image(Mat frame) {
+        MatOfByte buffer = new MatOfByte();
+        Imgcodecs.imencode(".png", frame, buffer);
+        //https://jenkov.com/tutorials/java-io/bytearrayinputstream.html
+        return new Image(new ByteArrayInputStream(buffer.toArray()));
+    }
+    protected void foldArccodion(){
+        accordionParametreOperation.getPanes().forEach(pane -> pane.setExpanded(false));
+    }
     private void initialisationMenuConvolution(){
         if (!initialisationMenuConvolution) {
             initialisationMenuConvolution = true;
@@ -180,23 +184,6 @@ public class TraitementImageController {
             accordionParametreOperation.getPanes().add(titledPaneFilter);
         }
     }
-
-    @FXML private Slider forceMatriceTransformation;
-
-    @FXML private Label labelForceMatrice;
-
-    @FXML private Mat matriceDeTransformation;
-
-    @FXML private Mat matriceDestination;
-    int taille;
-
-    @FXML protected void sliderEstEntrainDeBouger(){
-        labelForceMatrice.setText(String.valueOf((int)Math.round(forceMatriceTransformation.getValue())));
-        taille = Integer.parseInt(labelForceMatrice.getText());
-        timeline.stop();
-        timeline.play();
-    }
-
     private final Timeline timeline = new Timeline(new KeyFrame(Duration.millis(100), event -> {
         // Perform the erode operation on a background thread
         CompletableFuture.supplyAsync(() -> {
@@ -224,16 +211,11 @@ public class TraitementImageController {
         forceMatriceTransformation.setValue(0);
         labelForceMatrice.setText(String.valueOf((int)forceMatriceTransformation.getValue()));
     }
-
-    private boolean initialisationMenuConvolution = false;
-    private ToggleGroup toggleGroup = new ToggleGroup();
-
     private void nombreOddAEven(){
         if (taille % 2 == 0) {
             taille++; // make the kernel size odd
         }
     }
-
     private Mat choixMatriceEntreCouleurEtGris() {
         if (toggleButtonCouleur.isSelected()){
             return matriceImageEnGris;
@@ -242,10 +224,9 @@ public class TraitementImageController {
             return matriceImageEnCouleur;
         }
     }
-
-    private boolean imageEstEnGris = false;
-
     private void operationAEffectuer() {
+        final int RATIO = 3;
+        final int KERNEL_SIZE = 3;
         if ( typeOperation.getSelectionModel().getSelectedItem() != null){
             choixOperation = typeOperation.getSelectionModel().getSelectedItem().toString().toLowerCase();
         }
@@ -254,12 +235,8 @@ public class TraitementImageController {
         }
 
         Platform.runLater(() -> {
-            if (choixOperation.equalsIgnoreCase("convolution")){
-                accordionParametreOperation.getPanes().get(1).setVisible(true);
-            }
-            else {
-                accordionParametreOperation.getPanes().get(1).setVisible(false);
-            }
+            initialisationMenuConvolution();
+            accordionParametreOperation.getPanes().get(1).setVisible(choixOperation.equalsIgnoreCase("convolution"));
 
             if (choixOperation.equalsIgnoreCase("filtre de canny")){
                 if (!imageEstEnGris){
@@ -331,8 +308,6 @@ public class TraitementImageController {
                 Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
                 break;
             case "filtre de canny":
-                final int RATIO = 3;
-                final int KERNEL_SIZE = 3;
                 forceMatriceTransformation.setMax(100);
                 Imgproc.blur(choixMatriceEntreCouleurEtGris, matriceDestination, new Size(5, 5), new Point(-1, -1));
                 Imgproc.Canny(matriceDestination, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
