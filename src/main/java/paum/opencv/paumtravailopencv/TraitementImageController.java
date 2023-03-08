@@ -19,6 +19,9 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
+import static org.opencv.imgproc.Imgproc.COLOR_BGR2GRAY;
+import static org.opencv.imgproc.Imgproc.cvtColor;
+
 public class TraitementImageController {
 
     //https://stackoverflow.com/questions/39463461/javafx-draw-image-inside-in-pane
@@ -43,10 +46,12 @@ public class TraitementImageController {
         if (cheminImage != null){
             if (toggleButtonCouleur.isSelected()){
                 toggleButtonCouleur.setStyle("-fx-background-color:green");
-                Imgproc.cvtColor(matriceImageEnCouleur, matriceImageEnGris, Imgproc.COLOR_RGB2GRAY);
+                cvtColor(matriceImageEnCouleur, matriceImageEnGris, Imgproc.COLOR_RGB2GRAY);
+                imageEstEnGris = true;
             }
             else{
                 toggleButtonCouleur.setStyle("-fx-background-color:red");
+                imageEstEnGris = false;
             }
             timeline.stop();
             timeline.play();
@@ -131,11 +136,11 @@ public class TraitementImageController {
         }
 
     }
-   private RadioButton blurRadioButton = new RadioButton("Blur");
-    private RadioButton gaussianBlurRadioButton = new RadioButton("Gaussian Blur");
-    private RadioButton medianFilterRadioButton = new RadioButton("Median Filter");
-    private RadioButton bilateralFilterRadioButton = new RadioButton("Bilateral Filter");
-    private TitledPane titledPaneFilter = new TitledPane();
+   private final RadioButton blurRadioButton = new RadioButton("Blur");
+    private final RadioButton gaussianBlurRadioButton = new RadioButton("Gaussian Blur");
+    private final RadioButton medianFilterRadioButton = new RadioButton("Median Filter");
+    private final RadioButton bilateralFilterRadioButton = new RadioButton("Bilateral Filter");
+    private final TitledPane titledPaneFilter = new TitledPane();
 
     private void initialisationMenuConvolution(){
         if (!initialisationMenuConvolution) {
@@ -229,6 +234,17 @@ public class TraitementImageController {
         }
     }
 
+    private Mat choixMatriceEntreCouleurEtGris() {
+        if (toggleButtonCouleur.isSelected()){
+            return matriceImageEnGris;
+        }
+        else {
+            return matriceImageEnCouleur;
+        }
+    }
+
+    private boolean imageEstEnGris = false;
+
     private void operationAEffectuer() {
         if ( typeOperation.getSelectionModel().getSelectedItem() != null){
             choixOperation = typeOperation.getSelectionModel().getSelectedItem().toString().toLowerCase();
@@ -236,6 +252,26 @@ public class TraitementImageController {
         else {
             choixOperation = "";
         }
+
+        Platform.runLater(() -> {
+            if (choixOperation.equalsIgnoreCase("convolution")){
+                accordionParametreOperation.getPanes().get(1).setVisible(true);
+            }
+            else {
+                accordionParametreOperation.getPanes().get(1).setVisible(false);
+            }
+
+            if (choixOperation.equalsIgnoreCase("filtre de canny")){
+                if (!imageEstEnGris){
+                    toggleButtonCouleur.setSelected(true);
+                    toggleButtonCouleur.setVisible(false);
+                    metImageEnGrisOuCouleur();
+                }
+            }
+        });
+
+        Mat choixMatriceEntreCouleurEtGris = choixMatriceEntreCouleurEtGris();
+
         switch (choixOperation) {
             case "convolution":
                     blurRadioButton.setOnAction(e -> {
@@ -258,133 +294,60 @@ public class TraitementImageController {
                         timeline.play();
                     });
 
-                    accordionParametreOperation.getPanes().get(1).setVisible(true);
                     if (blurRadioButton.isSelected())
                     {
-                        if (toggleButtonCouleur.isSelected()) {
-                            Imgproc.blur(matriceImageEnGris, matriceDestination, new Size(taille, taille), new Point(-1, -1));
-                        } else {
-                            Imgproc.blur(matriceImageEnCouleur, matriceDestination, new Size(taille, taille), new Point(-1, -1));
-                        }
+                        Imgproc.blur(choixMatriceEntreCouleurEtGris, matriceDestination, new Size(taille, taille), new Point(-1, -1));
                     }
                     else if (medianFilterRadioButton.isSelected())
                     {
                         nombreOddAEven();
-                        if (toggleButtonCouleur.isSelected()) {
-                            Imgproc.medianBlur(matriceImageEnGris, matriceDestination, taille);
-                        } else {
-                            Imgproc.medianBlur(matriceImageEnCouleur, matriceDestination, taille);
-                        }
+                        Imgproc.medianBlur(choixMatriceEntreCouleurEtGris, matriceDestination, taille);
                     }
                     else if (bilateralFilterRadioButton.isSelected())
                     {
-                        if (toggleButtonCouleur.isSelected()) {
-                            Imgproc.bilateralFilter(matriceImageEnGris, matriceDestination, taille, taille * 2, (double)taille / 2);
-                        } else {
-                            Imgproc.bilateralFilter(matriceImageEnCouleur, matriceDestination, taille, taille * 2, (double)taille / 2);
-                        }
+                        Imgproc.bilateralFilter(choixMatriceEntreCouleurEtGris, matriceDestination, taille, taille * 2, (double)taille / 2);
                     }
                     else if (gaussianBlurRadioButton.isSelected())
                     {
                         nombreOddAEven();
-                        if (toggleButtonCouleur.isSelected()) {
-                            Imgproc.GaussianBlur(matriceImageEnGris, matriceDestination, new Size(taille, taille), 0, 0);
-                        } else {
-                            Imgproc.GaussianBlur(matriceImageEnCouleur, matriceDestination, new Size(taille, taille), 0, 0);
-                        }
+                        Imgproc.GaussianBlur(choixMatriceEntreCouleurEtGris, matriceDestination, new Size(taille, taille), 0, 0);
                     }
                     else {
-                        if (toggleButtonCouleur.isSelected()) {
-                            matriceDestination = matriceImageEnGris;
-                        } else {
-                            matriceDestination = matriceImageEnCouleur;
-                        }
+                        matriceDestination = choixMatriceEntreCouleurEtGris;
                     }
                 break;
             case "érosion":
-                //set les filtres en invisible
-                Platform.runLater(() -> {
-                    accordionParametreOperation.getPanes().get(1).setVisible(false);
-                });
-                if (toggleButtonCouleur.isSelected()) {
-                    Imgproc.erode(matriceImageEnGris, matriceDestination, matriceDeTransformation);
-                } else {
-                    Imgproc.erode(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
-                }
+                Imgproc.erode(choixMatriceEntreCouleurEtGris, matriceDestination, matriceDeTransformation);
                 break;
             case "dilatation":
-                Platform.runLater(() -> {
-                    accordionParametreOperation.getPanes().get(1).setVisible(false);
-                });
-
-                if (toggleButtonCouleur.isSelected()) {
-                    Imgproc.dilate(matriceImageEnGris, matriceDestination, matriceDeTransformation);
-                } else {
-                    Imgproc.dilate(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
-                }
+                Imgproc.dilate(choixMatriceEntreCouleurEtGris, matriceDestination, matriceDeTransformation);
                 break;
             case "ouverture":
-                Platform.runLater(() -> {
-                    accordionParametreOperation.getPanes().get(1).setVisible(false);
-                });
-
-                if (toggleButtonCouleur.isSelected()) {
-                    Imgproc.erode(matriceImageEnGris, matriceDestination, matriceDeTransformation);
-                    Imgproc.dilate(matriceDestination, matriceDestination, matriceDeTransformation);
-                } else {
-                    Imgproc.erode(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
-                    Imgproc.dilate(matriceDestination, matriceDestination, matriceDeTransformation);
-                }
+                Imgproc.erode(choixMatriceEntreCouleurEtGris, matriceDestination, matriceDeTransformation);
+                Imgproc.dilate(matriceDestination, matriceDestination, matriceDeTransformation);
                 break;
             case "fermeture":
-                Platform.runLater(() -> {
-                    accordionParametreOperation.getPanes().get(1).setVisible(false);
-                });
-
-                if (toggleButtonCouleur.isSelected()) {
-                    Imgproc.dilate(matriceImageEnGris, matriceDestination, matriceDeTransformation);
-                    Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
-                } else {
-                    Imgproc.dilate(matriceImageEnCouleur, matriceDestination, matriceDeTransformation);
-                    Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
-                }
+                Imgproc.dilate(choixMatriceEntreCouleurEtGris, matriceDestination, matriceDeTransformation);
+                Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
                 break;
             case "filtre de canny":
-                toggleButtonCouleur.setVisible(false);
                 final int RATIO = 3;
                 final int KERNEL_SIZE = 3;
-                Imgproc.blur(matriceImageEnGris, matriceDestination, new Size(taille, taille), new Point(-1, -1));
+                forceMatriceTransformation.setMax(100);
+                Imgproc.blur(choixMatriceEntreCouleurEtGris, matriceDestination, new Size(5, 5), new Point(-1, -1));
                 Imgproc.Canny(matriceDestination, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
-
-                Platform.runLater(() -> {
-                    accordionParametreOperation.getPanes().get(1).setVisible(false);
-                });
                 break;
             case "détection de contours":
-                Platform.runLater(() -> {
-                    accordionParametreOperation.getPanes().get(1).setVisible(false);
-                });
                 break;
             case "détection de coins":
-                Platform.runLater(() -> {
-                    accordionParametreOperation.getPanes().get(1).setVisible(false);
-                });
                 break;
             case "détection d'objets":
-                Platform.runLater(() -> {
-                    accordionParametreOperation.getPanes().get(1).setVisible(false);
-                });
                 break;
             default:
                 if (accordionParametreOperation.isVisible()){
                     accordionParametreOperation.setVisible(false);
                 }
-
-                if (toggleButtonCouleur.isSelected()) {
-                    matriceDestination = matriceImageEnGris;
-                } else {
-                    matriceDestination = matriceImageEnCouleur;
-                }
+                matriceDestination = choixMatriceEntreCouleurEtGris;
                 break;
         }
     }
