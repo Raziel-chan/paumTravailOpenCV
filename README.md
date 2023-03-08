@@ -1,5 +1,5 @@
 # paumTravailOpenCV
-Projet pour travail OpenCV
+Projet pour travail OpenCV (application JavaFX, SDK 19)
 
 C'est un travail demandé par un professeur pour le cours projet de programation au Cégep de sept-îles pour apprendre le traitement d'image.
 
