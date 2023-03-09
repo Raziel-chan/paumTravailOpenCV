@@ -12,17 +12,18 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.jetbrains.annotations.NotNull;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.Point;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
+import static org.opencv.imgproc.Imgproc.LINE_8;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 
 public class TraitementImageController {
@@ -48,6 +49,7 @@ public class TraitementImageController {
     private final RadioButton medianFilterRadioButton = new RadioButton("Median Filter");
     private final RadioButton bilateralFilterRadioButton = new RadioButton("Bilateral Filter");
     private final TitledPane titledPaneFilter = new TitledPane();
+    private Random rng = new Random(12345);
 
     @FXML protected void metImageEnGrisOuCouleur(){
         if (cheminImage != null){
@@ -72,6 +74,7 @@ public class TraitementImageController {
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.gif"));
         imageChoisis = fileChooser.showOpenDialog(new Stage());
+        imageEstEnGris = false;
 
         if (imageChoisis != null){
             cheminImage = imageChoisis.getAbsolutePath();
@@ -224,6 +227,12 @@ public class TraitementImageController {
             return matriceImageEnCouleur;
         }
     }
+
+    private void resetAnimation(){
+        timeline.stop();
+        timeline.play();
+    }
+
     private void operationAEffectuer() {
         final int RATIO = 3;
         final int KERNEL_SIZE = 3;
@@ -238,12 +247,19 @@ public class TraitementImageController {
             initialisationMenuConvolution();
             accordionParametreOperation.getPanes().get(1).setVisible(choixOperation.equalsIgnoreCase("convolution"));
 
-            if (choixOperation.equalsIgnoreCase("filtre de canny")){
+            if (choixOperation.equalsIgnoreCase("filtre de canny") || choixOperation.equalsIgnoreCase("détection de contours")){
+                forceMatriceTransformation.minProperty().setValue(20);
+                forceMatriceTransformation.maxProperty().setValue(175);
+                labelForceMatrice.setText(String.valueOf((int)forceMatriceTransformation.getValue()));
+                toggleButtonCouleur.setSelected(true);
+                toggleButtonCouleur.setVisible(false);
                 if (!imageEstEnGris){
-                    toggleButtonCouleur.setSelected(true);
-                    toggleButtonCouleur.setVisible(false);
                     metImageEnGrisOuCouleur();
                 }
+            }
+            else {
+                forceMatriceTransformation.setMax(20);
+                toggleButtonCouleur.setVisible(true);
             }
         });
 
@@ -252,23 +268,19 @@ public class TraitementImageController {
         switch (choixOperation) {
             case "convolution":
                     blurRadioButton.setOnAction(e -> {
-                        timeline.stop();
-                        timeline.play();
+                        resetAnimation();
                     });
 
                     gaussianBlurRadioButton.setOnAction(e -> {
-                        timeline.stop();
-                        timeline.play();
+                        resetAnimation();
                     });
 
                     medianFilterRadioButton.setOnAction(e -> {
-                        timeline.stop();
-                        timeline.play();
+                        resetAnimation();
                     });
 
                     bilateralFilterRadioButton.setOnAction(e -> {
-                        timeline.stop();
-                        timeline.play();
+                        resetAnimation();
                     });
 
                     if (blurRadioButton.isSelected())
@@ -308,11 +320,23 @@ public class TraitementImageController {
                 Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
                 break;
             case "filtre de canny":
-                forceMatriceTransformation.setMax(100);
-                Imgproc.blur(choixMatriceEntreCouleurEtGris, matriceDestination, new Size(5, 5), new Point(-1, -1));
-                Imgproc.Canny(matriceDestination, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
+                Mat temp = new Mat();
+                Imgproc.blur(choixMatriceEntreCouleurEtGris, temp, new Size(5, 5), new Point(-1, -1));
+                Imgproc.Canny(temp, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
                 break;
             case "détection de contours":
+                Mat temp2 = new Mat();
+                Imgproc.blur(choixMatriceEntreCouleurEtGris, temp2, new Size(5, 5), new Point(-1, -1));
+                Imgproc.Canny(temp2, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
+                List<MatOfPoint> contours = new ArrayList<>();
+                Mat hierarchy = new Mat();
+                Imgproc.findContours(matriceDestination, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+                Mat drawing = Mat.zeros(matriceDestination.size(), CvType.CV_8UC3);
+                for (int i = 0; i < contours.size(); i++) {
+                    Scalar color = new Scalar(rng.nextInt(256), rng.nextInt(256), rng.nextInt(256));
+                    Imgproc.drawContours(drawing, contours, i, color, 2, LINE_8, hierarchy, 0, new Point());
+                }
+                matriceDestination = drawing;
                 break;
             case "détection de coins":
                 break;
