@@ -26,8 +26,8 @@ public class TraitementImageApplication extends Application {
         stage.show();
 
         alert.setTitle("Détection de contours");
-        alert.setHeaderText("Information Alert");
-        String s ="Pour la détection de contours, il se peux que cela prend quelques minutes dûe au temps de calcul. surtout si l'image est en haute résolution.";
+        alert.setHeaderText("Attention lire avant de commencer");
+        String s ="Pour la détection de contours, il se peux que cela prend quelques minutes dûe au temps de calcul. surtout si l'image est de haute résolution. Si vous changer de mode trop rapidement, le traitement de contours risque de finir lors d'une autre opération.";
         alert.setContentText(s);
         // Create a pause transition of 0.3 seconds
         PauseTransition delay = new PauseTransition(Duration.millis(300));
