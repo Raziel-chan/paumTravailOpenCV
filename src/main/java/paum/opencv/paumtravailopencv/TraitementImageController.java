@@ -23,8 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
-import static org.opencv.imgproc.Imgproc.LINE_8;
-import static org.opencv.imgproc.Imgproc.cvtColor;
+import static org.opencv.imgproc.Imgproc.*;
 
 public class TraitementImageController {
     //https://stackoverflow.com/questions/39463461/javafx-draw-image-inside-in-pane
@@ -34,6 +33,7 @@ public class TraitementImageController {
     @FXML Accordion accordionParametreOperation;
     @FXML private Slider forceMatriceTransformation;
     @FXML private Label labelForceMatrice;
+    @FXML private Label nomSlider;
     public Mat matriceImageEnCouleur = new Mat();
     public String cheminImage;
     public Mat matriceImageEnGris = new Mat();
@@ -75,6 +75,7 @@ public class TraitementImageController {
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.gif"));
         imageChoisis = fileChooser.showOpenDialog(new Stage());
         imageEstEnGris = false;
+        //https://examples.javacodegeeks.com/java-development/desktop-java/javafx/dialog-javafx/javafx-dialog-example/
 
         if (imageChoisis != null){
             cheminImage = imageChoisis.getAbsolutePath();
@@ -233,9 +234,27 @@ public class TraitementImageController {
         timeline.play();
     }
 
-    private void operationAEffectuer() {
+    private void filtreDeCanny(Mat matriceDepart){
         final int RATIO = 3;
         final int KERNEL_SIZE = 3;
+        Mat temp = new Mat();
+        Imgproc.blur(matriceDepart, temp, new Size(5, 5), new Point(-1, -1));
+        Imgproc.Canny(temp, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
+    }
+    private void changeSliderValeurMinEtMax(int min, int max){
+        forceMatriceTransformation.minProperty().setValue(min);
+        forceMatriceTransformation.maxProperty().setValue(max);
+        labelForceMatrice.setText(String.valueOf((int)forceMatriceTransformation.getValue()));
+    }
+
+    private void metImageEnGris(){
+        toggleButtonCouleur.setSelected(true);
+        toggleButtonCouleur.setVisible(false);
+        if (!imageEstEnGris){
+            metImageEnGrisOuCouleur();
+        }
+    }
+    private void operationAEffectuer() {
         if ( typeOperation.getSelectionModel().getSelectedItem() != null){
             choixOperation = typeOperation.getSelectionModel().getSelectedItem().toString().toLowerCase();
         }
@@ -246,18 +265,15 @@ public class TraitementImageController {
         Platform.runLater(() -> {
             initialisationMenuConvolution();
             accordionParametreOperation.getPanes().get(1).setVisible(choixOperation.equalsIgnoreCase("convolution"));
+            nomSlider.setText("Force de la matrice de transformation");
 
             if (choixOperation.equalsIgnoreCase("filtre de canny") || choixOperation.equalsIgnoreCase("détection de contours")){
-                forceMatriceTransformation.minProperty().setValue(20);
-                forceMatriceTransformation.maxProperty().setValue(175);
-                labelForceMatrice.setText(String.valueOf((int)forceMatriceTransformation.getValue()));
-                toggleButtonCouleur.setSelected(true);
-                toggleButtonCouleur.setVisible(false);
-                if (!imageEstEnGris){
-                    metImageEnGrisOuCouleur();
-                }
-            }
-            else {
+                changeSliderValeurMinEtMax(20,175);
+                metImageEnGris();
+            } else if (choixOperation.equalsIgnoreCase("détection de coins")) {
+                nomSlider.setText("nombre de coins à détecter");
+                changeSliderValeurMinEtMax(5, 300);
+            } else {
                 forceMatriceTransformation.setMax(20);
                 toggleButtonCouleur.setVisible(true);
             }
@@ -320,14 +336,10 @@ public class TraitementImageController {
                 Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
                 break;
             case "filtre de canny":
-                Mat temp = new Mat();
-                Imgproc.blur(choixMatriceEntreCouleurEtGris, temp, new Size(5, 5), new Point(-1, -1));
-                Imgproc.Canny(temp, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
+                filtreDeCanny(choixMatriceEntreCouleurEtGris);
                 break;
             case "détection de contours":
-                Mat temp2 = new Mat();
-                Imgproc.blur(choixMatriceEntreCouleurEtGris, temp2, new Size(5, 5), new Point(-1, -1));
-                Imgproc.Canny(temp2, matriceDestination, (int)forceMatriceTransformation.getValue(), (int)forceMatriceTransformation.getValue() * RATIO, KERNEL_SIZE, false);
+                filtreDeCanny(choixMatriceEntreCouleurEtGris);
                 List<MatOfPoint> contours = new ArrayList<>();
                 Mat hierarchy = new Mat();
                 Imgproc.findContours(matriceDestination, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -339,6 +351,19 @@ public class TraitementImageController {
                 matriceDestination = drawing;
                 break;
             case "détection de coins":
+                MatOfPoint corners = new MatOfPoint();
+                //matrice tempo pour afficher les coins sans briser la matrice de départ
+                Mat temp = new Mat();
+                temp = choixMatriceEntreCouleurEtGris.clone();
+                //initialise la matrice de gris
+                cvtColor(matriceImageEnCouleur, matriceImageEnGris, Imgproc.COLOR_RGB2GRAY);
+                Imgproc.goodFeaturesToTrack(matriceImageEnGris, corners, (int)forceMatriceTransformation.getValue(), 0.01, 20);
+                for(Point point : corners.toList()) {
+                    int x = (int)point.x;
+                    int y = (int)point.y;
+                    Imgproc.circle(temp, new Point(x, y), 10, new Scalar(rng.nextInt(256), rng.nextInt(256), rng.nextInt(256)), -1);
+                }
+                matriceDestination = temp;
                 break;
             case "détection d'objets":
                 break;
