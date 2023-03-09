@@ -81,6 +81,7 @@ public class TraitementImageController {
             cheminImage = imageChoisis.getAbsolutePath();
             //https://stackoverflow.com/questions/25643098/how-to-set-fileimage-on-imageview
             imageOriginale.setImage(new Image(cheminImage));
+            //https://docs.opencv.org/3.4/d5/d98/tutorial_mat_operations.html
             matriceImageEnCouleur = Imgcodecs.imread(cheminImage);
 
             if (toggleButtonCouleur.isSelected()){
@@ -283,6 +284,7 @@ public class TraitementImageController {
 
         switch (choixOperation) {
             case "convolution":
+                //https://docs.opencv.org/3.4/dc/dd3/tutorial_gausian_median_blur_bilateral_filter.html
                     blurRadioButton.setOnAction(e -> {
                         resetAnimation();
                     });
@@ -322,12 +324,14 @@ public class TraitementImageController {
                     }
                 break;
             case "érosion":
+                //https://docs.opencv.org/3.4/db/df6/tutorial_erosion_dilatation.html
                 Imgproc.erode(choixMatriceEntreCouleurEtGris, matriceDestination, matriceDeTransformation);
                 break;
             case "dilatation":
                 Imgproc.dilate(choixMatriceEntreCouleurEtGris, matriceDestination, matriceDeTransformation);
                 break;
             case "ouverture":
+                //https://docs.opencv.org/3.4/d3/dbe/tutorial_opening_closing_hats.html
                 Imgproc.erode(choixMatriceEntreCouleurEtGris, matriceDestination, matriceDeTransformation);
                 Imgproc.dilate(matriceDestination, matriceDestination, matriceDeTransformation);
                 break;
@@ -336,9 +340,11 @@ public class TraitementImageController {
                 Imgproc.erode(matriceDestination, matriceDestination, matriceDeTransformation);
                 break;
             case "filtre de canny":
+                //https://docs.opencv.org/3.4/da/d5c/tutorial_canny_detector.html
                 filtreDeCanny(choixMatriceEntreCouleurEtGris);
                 break;
             case "détection de contours":
+                //https://docs.opencv.org/3.4/df/d0d/tutorial_find_contours.html
                 filtreDeCanny(choixMatriceEntreCouleurEtGris);
                 List<MatOfPoint> contours = new ArrayList<>();
                 Mat hierarchy = new Mat();
@@ -351,6 +357,7 @@ public class TraitementImageController {
                 matriceDestination = drawing;
                 break;
             case "détection de coins":
+                //https://docs.opencv.org/3.4/d4/d8c/tutorial_py_shi_tomasi.html
                 MatOfPoint corners = new MatOfPoint();
                 //matrice tempo pour afficher les coins sans briser la matrice de départ
                 Mat temp = new Mat();
